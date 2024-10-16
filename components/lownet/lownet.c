@@ -166,6 +166,7 @@ void lownet_encrypt_send(const lownet_frame_t* frame) {
 	memcpy(&plain.source, &frame->source, LOWNET_UNENCRYPTED_SIZE);
 	memcpy(&plain.protocol, &frame->protocol, LOWNET_ENCRYPTED_SIZE);
 
+	ESP_LOGE(TAG, "Calling crypt_encrypt()");
 	// Encrypt with user-defined enc function.
 	net_system.encrypt(&plain, &cipher);
 
@@ -202,6 +203,7 @@ void lownet_send(const lownet_frame_t* frame) {
 
 	if (lownet_get_key() != NULL) {
 		// We have an AES key -- use it to encrypt the frame.
+		ESP_LOGE(TAG, "calling lownet_encrypt_send()");
 		lownet_encrypt_send(&out_frame);
 	} else {
 		// No key is active -- send the frame as-is, plaintext.

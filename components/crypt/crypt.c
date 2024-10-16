@@ -1,5 +1,6 @@
 #include "crypt.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,13 +12,18 @@
 
 void crypt_decrypt(const lownet_secure_frame_t* cipher, lownet_secure_frame_t* plain)
 {
+    printf("crypt_DEcrypt\n");
+
+    lownet_key_t* key = lownet_get_key();
+
     // Initialize the AES context
     esp_aes_context aes;
     esp_aes_init(&aes);
 
-    // Set the AES decryption key (assuming a 256-bit key)
-    if (esp_aes_setkey(&aes, (const unsigned char *)lownet_public_key, 256) != 0) {
-        serial_write_line("Failed to set AES decryption key");
+    // Set the AES encryption key using the key stored in net_system
+    if (esp_aes_setkey(&aes, key->bytes, key->size * 8) != 0) {
+        printf("Failed to set AES encryption key\n");
+        esp_aes_free(&aes);
         return;
     }
 
@@ -49,14 +55,17 @@ void crypt_decrypt(const lownet_secure_frame_t* cipher, lownet_secure_frame_t* p
 
 void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* cipher)
 {
-    serial_write_line("crypt_encrypt");
-	// Initialize the AES context
+    printf("crypt_encrypt\n");
+
+    lownet_key_t* key = lownet_get_key();
+
     esp_aes_context aes;
     esp_aes_init(&aes);
 
-    // Set the AES encryption key (assumed to be a 256-bit key)
-    if (esp_aes_setkey(&aes, (const unsigned char *)lownet_public_key, 256) != 0) {
-        serial_write_line("Failed to set AES encryption key");
+    // Set the AES encryption key using the key stored in net_system
+    if (esp_aes_setkey(&aes, key->bytes, key->size * 8) != 0) {
+        printf("Failed to set AES encryption key\n");
+        esp_aes_free(&aes);
         return;
     }
 
@@ -70,7 +79,7 @@ void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* ci
 
     // Encrypt the data in CBC mode
     if (esp_aes_crypt_cbc(&aes, ESP_AES_ENCRYPT, LOWNET_ENCRYPTED_SIZE, iv, to_encrypt, (unsigned char*)&cipher->protocol) != 0) {
-        serial_write_line("AES encryption failed");
+        printf("AES encryption failed\n");
         esp_aes_free(&aes);
         return;
     }
@@ -83,8 +92,6 @@ void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* ci
 
     // Free the AES context
     esp_aes_free(&aes);
-
-    crypt_test_command((char*)&plain->protocol);
 }
 
 // Usage: crypt_command(KEY)
@@ -114,6 +121,7 @@ void crypt_setkey_command(char* args) {
         return;
     }
 
+
     // Zero out the allocated memory (ensures padding with zeros)
     memset(aes_key.bytes, 0, aes_key.size);
 
@@ -122,6 +130,13 @@ void crypt_setkey_command(char* args) {
 
     // Set the AES key using the lownet_set_key function
     lownet_set_key(&aes_key);
+
+    esp_aes_context aes;
+    esp_aes_init(&aes);
+    if (esp_aes_setkey(&aes, aes_key.bytes, aes_key.size * 8) != 0) {
+        serial_write_line("Failed to set AES decryption key");
+        return;
+    }
 
     serial_write_line("Encryption key set");
 
