@@ -49,6 +49,7 @@ void crypt_decrypt(const lownet_secure_frame_t* cipher, lownet_secure_frame_t* p
 
 void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* cipher)
 {
+    serial_write_line("crypt_encrypt");
 	// Initialize the AES context
     esp_aes_context aes;
     esp_aes_init(&aes);
@@ -82,6 +83,8 @@ void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* ci
 
     // Free the AES context
     esp_aes_free(&aes);
+
+    crypt_test_command((char*)&plain->protocol);
 }
 
 // Usage: crypt_command(KEY)
@@ -89,13 +92,49 @@ void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* ci
 // Post:  If key == NULL encryption has been disabled
 //        Else KEY has been set as the encryption key to use for
 //        lownet communication.
-void crypt_setkey_command(char* args)
-{
-	// ...
+void crypt_setkey_command(char* args) {
+    // Initialize the AES key structure
+    lownet_key_t aes_key;
+    
+    // Allocate memory for a 32-byte AES key
+    aes_key.size = 32;  // Assuming LOWNET_KEY_SIZE_AES is 32 bytes
+    aes_key.bytes = (uint8_t*)malloc(aes_key.size);
+    
+    if (aes_key.bytes == NULL) {
+        // Memory allocation failed
+        serial_write_line("Memory allocation for AES key failed");
+        return;
+    }
+
+    if (args == NULL || strlen(args) == 0) {
+        // Disable encryption by passing NULL
+        lownet_set_key(NULL);
+        serial_write_line("Encryption disabled");
+        free(aes_key.bytes);  // Free the allocated memory
+        return;
+    }
+
+    // Zero out the allocated memory (ensures padding with zeros)
+    memset(aes_key.bytes, 0, aes_key.size);
+
+    // Copy the user-provided key into the AES key, padding with zeros if necessary
+    strncpy((char*)aes_key.bytes, args, strlen(args));
+
+    // Set the AES key using the lownet_set_key function
+    lownet_set_key(&aes_key);
+
+    serial_write_line("Encryption key set");
+
+    // Free the allocated memory after setting the key
+    free(aes_key.bytes);
 }
+
+
+
 
 void crypt_test_command(char* str)
 {
+    serial_write_line("crypt test");
 	if (!str)
 		return;
 	if (!lownet_get_key())

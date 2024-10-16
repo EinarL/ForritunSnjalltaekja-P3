@@ -395,6 +395,7 @@ void lownet_service_kill() {
 // It is of great importance that this callback function not block, and
 // return quickly to avoid locking up the wifi driver.
 void lownet_inbound_handler(const esp_now_recv_info_t * info, const uint8_t* data, int len) {
+	printf("lownet_inbound_handler called\n");
 	if (len == sizeof(lownet_frame_t) && net_system.aes_key.size == 0) {
 		// Non-blocking queue send; if queue is full then packet is dropped.
 		if (xQueueSend(net_system.inbound, data, 0) != pdTRUE) {
