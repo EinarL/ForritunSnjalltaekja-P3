@@ -1,0 +1,7 @@
+*~
+build
+sdkconfig
+*.tar.gz
+*.zip
+\#*\#
+.#*
