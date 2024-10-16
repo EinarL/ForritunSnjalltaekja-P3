@@ -93,6 +93,8 @@ void app_main(void)
 	lownet_time_t init_time = {1, 0};
 	lownet_set_time(&init_time);
 
+	serial_write_line("> ");
+
 	while (true)
 		{
 			memset(msg_in, 0, MSG_BUFFER_LENGTH);
@@ -124,6 +126,7 @@ void app_main(void)
 						// Default, chat broadcast message.
 						FIND_COMMAND("shout")(msg_in);
 					}
+				serial_write_line("> ");
 			}
 		}
 }

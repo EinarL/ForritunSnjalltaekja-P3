@@ -11,8 +11,41 @@
 
 void crypt_decrypt(const lownet_secure_frame_t* cipher, lownet_secure_frame_t* plain)
 {
-	// ...
+    // Initialize the AES context
+    esp_aes_context aes;
+    esp_aes_init(&aes);
+
+    // Set the AES decryption key (assuming a 256-bit key)
+    if (esp_aes_setkey(&aes, (const unsigned char *)lownet_public_key, 256) != 0) {
+        serial_write_line("Failed to set AES decryption key");
+        return;
+    }
+
+    // Use the initialization vector (IV) from the cipher frame
+    unsigned char iv[16];
+    memcpy(iv, cipher->ivt, sizeof(iv));
+
+    // Prepare the encrypted data to be decrypted
+    uint8_t to_decrypt[LOWNET_ENCRYPTED_SIZE];
+    memcpy(to_decrypt, &cipher->protocol, LOWNET_ENCRYPTED_SIZE);
+
+    // Decrypt the data using AES in CBC mode
+    if (esp_aes_crypt_cbc(&aes, ESP_AES_DECRYPT, LOWNET_ENCRYPTED_SIZE, iv, to_decrypt, (unsigned char*)&plain->protocol) != 0) {
+        serial_write_line("AES decryption failed");
+        esp_aes_free(&aes);
+        return;
+    }
+
+    // Copy over the rest of the unencrypted parts (IVT, magic, etc.)
+    memcpy(plain->magic, cipher->magic, sizeof(cipher->magic));
+    memcpy(plain->ivt, cipher->ivt, sizeof(cipher->ivt));
+    plain->source = cipher->source;
+    plain->destination = cipher->destination;
+
+    // Free the AES context
+    esp_aes_free(&aes);
 }
+
 
 void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* cipher)
 {
@@ -22,7 +55,7 @@ void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* ci
 
     // Set the AES encryption key (assumed to be a 256-bit key)
     if (esp_aes_setkey(&aes, (const unsigned char *)lownet_public_key, 256) != 0) {
-        ESP_LOGE(TAG, "Failed to set AES encryption key");
+        serial_write_line("Failed to set AES encryption key");
         return;
     }
 
@@ -36,7 +69,7 @@ void crypt_encrypt(const lownet_secure_frame_t* plain, lownet_secure_frame_t* ci
 
     // Encrypt the data in CBC mode
     if (esp_aes_crypt_cbc(&aes, ESP_AES_ENCRYPT, LOWNET_ENCRYPTED_SIZE, iv, to_encrypt, (unsigned char*)&cipher->protocol) != 0) {
-        ESP_LOGE(TAG, "AES encryption failed");
+        serial_write_line("AES encryption failed");
         esp_aes_free(&aes);
         return;
     }
