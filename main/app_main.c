@@ -95,6 +95,8 @@ void app_main(void)
 
 	serial_write_line("> ");
 
+	crypt_setkey_command("ACDC2023");
+
 	while (true)
 		{
 			memset(msg_in, 0, MSG_BUFFER_LENGTH);

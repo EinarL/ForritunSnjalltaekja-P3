@@ -55,6 +55,7 @@ void ping(uint8_t node, const uint8_t* payload, uint8_t length)
 
 void ping_receive(const lownet_frame_t* frame)
 {
+	serial_write_line("ping_receive called");
 	if (frame->length < sizeof(ping_packet_t))
 		// Malformed frame.  Discard.
 		return;
