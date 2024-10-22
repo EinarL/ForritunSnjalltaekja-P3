@@ -32,10 +32,10 @@ void date_command(char*)
 {
 	lownet_time_t time = lownet_get_time();
 	if (time.seconds == 0 && time.parts == 0)
-		{
-			serial_write_line("Network time is not available.");
-			return;
-		}
+	{
+		serial_write_line("Network time is not available.");
+		return;
+	}
 
 	// time + description + null
 	char buffer[TIME_WIDTH + 25 + 1];
